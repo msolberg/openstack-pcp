@@ -90,13 +90,48 @@ An Ansible playbook is provided [here](playbooks/install_pcp.yaml) which will in
 
 A single host will be used to collect performance statistics from the OpenStack nodes, aggregate them, and then present them via a set of web interfaces. This host can either be RHEL 7 or RHEL 8. Official instructions for setting up the Collector on RHEL 8 are available [here](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/monitoring_and_managing_system_status_and_performance/logging-performance-data-with-pmlogger_monitoring-and-managing-system-status-and-performance#setting-up-the-central-server-to-collect-data_logging-performance-data-with-pmlogger). Note that the configuration used in this guide will generate roughly 100M of performance logs per host per day.
 
-### Installing Packages
+The instructions differ slightly, depending on whether the operating system of the Monitoring Host is RHEL 7 or RHEL 8:
 
-The Performance Co-Pilot packages are included in the base repositories for RHEL 7 and RHEL 8. The web application package (```pcp-webjs```) is included in the ```rhel-7-server-optional-rpms``` repository for RHEL 7. To install the PCP packages on RHEL 7, run the following command:
+### RHEL 7
+
+The Performance Co-Pilot packages are included in the base repositories for RHEL 7. The web application package (```pcp-webjs```) is included in the ```rhel-7-server-optional-rpms``` repository for RHEL 7. To install the PCP packages, run the following command:
 
 ```
 # yum -y install pcp pcp-system-tools pcp-webjs pcp-webapi
 ```
+
+Once the packages are installed on the Monitoring Host, it will need to be configured to poll the Collector Hosts for their performance data. The ```pmlogger``` service can either be configured by adding a line for each Collector Host to a single file, ```/etc/pcp/pmlogger/control```, or by adding a file for each Collector Host to a directory, ```/etc/pcp/pmlogger/control.d```. Regardless of the approach, each Collector Host should have a corresponding line with the following format:
+
+```
+<hostname>		n   n	PCP_LOG_DIR/pmlogger/<hostname>		-r -T24h10m -c config.remote
+```
+
+For example, a Collector Host with the hostname ```bc4-h10``` would have a file named ```/etc/pcp/pmlogger/control.d/bc4-h10``` with the following contents:
+
+```
+# remote host
+bc4-h10		n   n	PCP_LOG_DIR/pmlogger/bc4-h10		-r -T24h10m -c config.remote
+```
+
+After configuring the ```pmlogger``` service, the following services need to be started and enabled:
+
+```
+# systemctl enable pmcd
+# systemctl start pmcd
+# systemctl enable pmlogger
+# systemctl start pmlogger
+# systemctl enable pmwebd
+# systemctl start pmwebd
+```
+
+Finally, the port 44323 will need to be exposed on the firewall of the Monitoring Host to allow access to the Web interface. This can either be enabled by editing the ```iptables``` configuration or using the ```firewalld``` command:
+
+```
+#firewall-cmd --add-port=44323/tcp --permanent
+```
+
+After the services are started and configured and the firewall is opened, the Performance Co-Pilot web applications can be accessed via http on the Monitoring Host at port 44323.
+
 
 
 
