@@ -77,6 +77,15 @@ To avoid a deployment of the overcloud, these changes can also temporarily be pu
 # iptables -I INPUT 5 -p tcp -m multiport --dports 44321 -m state --state NEW,RELATED,ESTABLISHED -m comment --comment "44321 PCP Incoming ipv4" -j ACCEPT
 ```
 
+### Installing the packages and configuration on all roles
+
+An Ansible playbook is provided [here](playbooks/install_pcp.yaml) which will install and configure PCP on the Collector Hosts in the environment. It performs the following tasks:
+
+1) Install the pcp-zeroconf package
+2) Configure pmcd to listen on the Control Plane interface
+3) Configure SELinux to allow pmcd to attach to the 44321 port.
+4) Enable and start the pmcd and pmlogger services.
+
 ## Installing the Monitoring Host
 
 A single host will be used to collect performance statistics from the OpenStack nodes, aggregate them, and then present them via a set of web interfaces. This host can either be RHEL 7 or RHEL 8. Official instructions for setting up the Collector on RHEL 8 are available [here](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/monitoring_and_managing_system_status_and_performance/logging-performance-data-with-pmlogger_monitoring-and-managing-system-status-and-performance#setting-up-the-central-server-to-collect-data_logging-performance-data-with-pmlogger). Note that the configuration used in this guide will generate roughly 100M of performance logs per host per day.
