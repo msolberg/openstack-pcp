@@ -1,0 +1,45 @@
+---
+- name: Performance Co-Pilot Configuration
+  hosts: all
+
+  tasks:
+  - name: Ensure pcp-zeroconf package is latest
+    yum:
+      name: pcp-zeroconf
+      state: latest
+
+  - name: Write pmcd configuration file
+    template:
+      src: templates/pmcd.options
+      dest: /etc/pcp/pmcd/pmcd.options
+      owner: root
+      group: root
+      mode: '0644'
+
+  - name: Ensure SELinux Boolean pcp_bind_all_unreserved_ports is set
+    seboolean:
+      name: pcp_bind_all_unreserved_ports
+      state: yes
+      persistent: yes
+  
+  - name: Enable the pmcd service
+    service:
+      name: pmcd
+      enabled: yes
+  
+  - name: Enable the pmlogger service
+    service: 
+      name: pmlogger
+      enabled: yes
+  
+  - name: Ensure that the pmcd service is running
+    service: 
+      name: pmcd
+      state: restarted
+  
+  - name: Ensure that the pmlogger service is running
+    service:
+      name: pmlogger
+      state: restarted
+
+
